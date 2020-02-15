@@ -3,6 +3,7 @@ package models
 import (
 	"time"
 
+	validation "github.com/bitrise-io/api-utils/models"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
@@ -36,10 +37,10 @@ func (a *App) BeforeCreate(scope *gorm.Scope) error {
 func (a *App) BeforeSave(scope *gorm.Scope) error {
 	var err error
 	if len(a.Plan) == 0 {
-		err = scope.DB().AddError(NewValidationError("plan: cannot be empty"))
+		err = scope.DB().AddError(validation.NewValidationError("plan: cannot be empty"))
 	}
 	if len(a.AppSlug) == 0 {
-		err = scope.DB().AddError(NewValidationError("app_slug: cannot be empty"))
+		err = scope.DB().AddError(validation.NewValidationError("app_slug: cannot be empty"))
 	}
 	if err != nil {
 		return errors.New("Validation failed")

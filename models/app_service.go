@@ -1,6 +1,9 @@
 package models
 
-import "github.com/jinzhu/gorm"
+import (
+	validation "github.com/bitrise-io/api-utils/models"
+	"github.com/jinzhu/gorm"
+)
 
 // AppService ...
 type AppService struct {
@@ -10,7 +13,7 @@ type AppService struct {
 // Create ...
 func (s *AppService) Create(app *App) (*App, []error, error) {
 	result := s.DB.Create(app)
-	verrs := ValidationErrors(result.GetErrors())
+	verrs := validation.ValidationErrors(result.GetErrors())
 	if len(verrs) > 0 {
 		return nil, verrs, nil
 	}
