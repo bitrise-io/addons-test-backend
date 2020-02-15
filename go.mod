@@ -7,27 +7,24 @@ require (
 	github.com/DataDog/datadog-go v3.4.0+incompatible // indirect
 	github.com/bitrise-io/addons-firebase-testlab v0.0.0-20200108160005-8fbcdcccd2ea
 	github.com/bitrise-io/api-utils v0.0.0-20200215134217-a8cffc72b7d5
-	github.com/bitrise-io/go-crypto v0.0.0-20190716130036-2cb4b060f33a // indirect
 	github.com/bitrise-io/go-utils v0.0.0-20200106143038-948e80486906
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/c2fo/testify v0.0.0-20150827203832-fba96363964a
 	github.com/denisenkom/go-mssqldb v0.0.0-20200206145737-bbfc9a55622e // indirect
 	github.com/gobuffalo/buffalo v0.15.5 // indirect
 	github.com/gobuffalo/nulls v0.2.0
-	github.com/gobuffalo/uuid v2.0.5+incompatible
 	github.com/jinzhu/gorm v1.9.12
 	github.com/jinzhu/now v1.1.1 // indirect
-	github.com/joshdk/go-junit v0.0.0-20191027203205-93e3ed9f3c4c // indirect
+	github.com/joshdk/go-junit v0.0.0-20191027203205-93e3ed9f3c4c
 	github.com/justinas/alice v1.2.0
-	github.com/markbates/pop v4.12.2+incompatible // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/satori/go.uuid v1.2.0
-	github.com/savaki/amplitude-go v0.0.0-20160610055645-f62e3b57c0e4 // indirect
 	github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3 // indirect
+	github.com/stretchr/testify v1.4.0
 	github.com/tinylib/msgp v1.1.1 // indirect
-	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c
+	github.com/xtgo/uuid v0.0.0-20140804021211-a0b114877d4c // indirect
 	go.uber.org/atomic v1.5.1 // indirect
 	go.uber.org/multierr v1.4.0 // indirect
 	go.uber.org/zap v1.13.0
