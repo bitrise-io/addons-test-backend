@@ -8,15 +8,14 @@ import (
 
 	"github.com/bitrise-io/api-utils/httprequest"
 
-	"github.com/bitrise-io/addons-firebase-testlab/database"
-	"github.com/bitrise-io/addons-firebase-testlab/junit"
-	"github.com/bitrise-io/addons-firebase-testlab/testreportfiller"
 	"github.com/bitrise-io/addons-test-backend/env"
 	"github.com/bitrise-io/addons-test-backend/firebaseutils"
+	"github.com/bitrise-io/addons-test-backend/junit"
 	"github.com/bitrise-io/addons-test-backend/models"
+	"github.com/bitrise-io/addons-test-backend/testreportfiller"
 	"github.com/bitrise-io/api-utils/httpresponse"
 	"github.com/pkg/errors"
-	"github.com/xtgo/uuid"
+	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 )
 
@@ -62,7 +61,7 @@ func WebhookHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) err
 			}
 		}
 
-		totals, err := GetTotals(env, app.AppSlug, appData.BuildSlug, logger)
+		totals, err := GetTotals(env, app.AppSlug, appData.BuildSlug)
 		if err != nil {
 			env.Logger.Warn("Failed to get totals of test", zap.Any("app_data", appData), zap.Error(err))
 			return httpresponse.RespondWithSuccess(w, app)
@@ -79,8 +78,7 @@ func WebhookHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) err
 			env.AnalyticsClient.TestReportSummaryGenerated(app.AppSlug, appData.BuildSlug, "null", totals.Tests, time.Now())
 		}
 
-		testReportRecords := []models.TestReport{}
-		err = database.GetTestReports(&testReportRecords, app.AppSlug, appData.BuildSlug)
+		testReportRecords, err := env.TestReportService.FindAll(&models.TestReport{AppSlug: app.AppSlug, BuildSlug: appData.BuildSlug})
 		if err != nil {
 			return errors.Wrap(err, "Failed to find test reports in DB")
 		}
@@ -115,7 +113,7 @@ func WebhookHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) err
 				return errors.Wrap(err, "Failed to get test details")
 			}
 
-			testDetails, err := fillTestDetails(details, fAPI, logger)
+			testDetails, err := fillTestDetails(details, fAPI, env.Logger)
 			if err != nil {
 				return errors.Wrap(err, "Failed to prepare test details data structure")
 			}
@@ -140,5 +138,5 @@ func WebhookHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) err
 		return errors.Errorf("Invalid build type: %s", buildType)
 	}
 
-	return c.Render(200, r.JSON(app))
+	return httpresponse.RespondWithSuccess(w, app)
 }

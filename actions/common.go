@@ -1,14 +1,19 @@
 package actions
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
+	"sync"
 
 	"github.com/bitrise-io/addons-test-backend/env"
+	"go.uber.org/zap"
+	toolresults "google.golang.org/api/toolresults/v1beta3"
 
-	"github.com/bitrise-io/addons-firebase-testlab/junit"
-	"github.com/bitrise-io/addons-firebase-testlab/testreportfiller"
 	"github.com/bitrise-io/addons-test-backend/firebaseutils"
+	"github.com/bitrise-io/addons-test-backend/junit"
 	"github.com/bitrise-io/addons-test-backend/models"
+	"github.com/bitrise-io/addons-test-backend/testreportfiller"
 	"github.com/pkg/errors"
 )
 
@@ -85,4 +90,195 @@ func GetTotals(env *env.AppEnv, appSlug, buildSlug string) (Totals, error) {
 		}
 	}
 	return totals, nil
+}
+
+func fillTestDetails(details *toolresults.ListStepsResponse, fAPI *firebaseutils.APIModel, logger *zap.Logger) ([]*models.Test, error) {
+	testDetails := make([]*models.Test, len(details.Steps))
+
+	var wg sync.WaitGroup
+	wg.Add(len(details.Steps))
+	errChannel := make(chan error, 1)
+
+	for index, d := range details.Steps {
+		go func(detail *toolresults.Step, i int) {
+			defer func() {
+				wg.Done()
+			}()
+			test := &models.Test{}
+			for _, dimension := range detail.DimensionValue {
+				switch dimension.Key {
+				case "Model":
+					test.DeviceName = firebaseutils.GetDeviceNameByID(dimension.Value)
+				case "Version":
+					prefixByPlatform := "API Level"
+					if strings.Contains(strings.ToLower(detail.Name), "ios") {
+						prefixByPlatform = "iOS"
+					}
+					test.APILevel = fmt.Sprintf("%s %s", prefixByPlatform, dimension.Value)
+				case "Locale":
+					test.Locale = firebaseutils.GetLangByCountryCode(dimension.Value)
+				case "Orientation":
+					test.Orientation = dimension.Value
+				}
+			}
+
+			if detail.Outcome != nil {
+				test.Outcome = detail.Outcome.Summary
+			}
+			test.Status = detail.State
+			test.StepID = detail.StepId
+
+			if detail.TestExecutionStep != nil {
+				if len(detail.TestExecutionStep.TestIssues) > 0 {
+					test.TestIssues = []models.TestIssue{}
+					for _, issue := range detail.TestExecutionStep.TestIssues {
+						testIssue := models.TestIssue{Name: issue.ErrorMessage}
+						if issue.StackTrace != nil {
+							testIssue.Stacktrace = issue.StackTrace.Exception
+						}
+						test.TestIssues = append(test.TestIssues, testIssue)
+					}
+				}
+				outputURLs := models.OutputURLModel{}
+				outputURLs.ScreenshotURLs = []string{}
+				outputURLs.AssetURLs = map[string]string{}
+				if detail.TestExecutionStep.TestTiming != nil {
+					if detail.TestExecutionStep.TestTiming.TestProcessDuration != nil {
+						test.StepDuration = int(detail.TestExecutionStep.TestTiming.TestProcessDuration.Seconds)
+					}
+				}
+
+				test.TestResults = []models.TestResults{}
+				for _, overview := range detail.TestExecutionStep.TestSuiteOverviews {
+					testResult := models.TestResults{Total: int(overview.TotalCount), Failed: int(overview.FailureCount), Skipped: int(overview.SkippedCount)}
+					test.TestResults = append(test.TestResults, testResult)
+				}
+
+				if detail.TestExecutionStep.ToolExecution != nil {
+					//get logcat
+					for _, testlog := range detail.TestExecutionStep.ToolExecution.ToolLogs {
+						//create signed url for assets
+						signedURL, err := fAPI.GetSignedURLOfLegacyBucketPath(testlog.FileUri)
+						if err != nil {
+							logger.Error("Failed to get signed url",
+								zap.String("file_uri", testlog.FileUri),
+								zap.Any("error", errors.WithStack(err)),
+							)
+							if len(errChannel) == 0 {
+								errChannel <- err
+							}
+							return
+						}
+
+						outputURLs.LogURLs = append(outputURLs.LogURLs, signedURL)
+					}
+
+					// parse output files by type
+					for _, output := range detail.TestExecutionStep.ToolExecution.ToolOutputs {
+						{
+							if strings.Contains(output.Output.FileUri, "results/") {
+								//create signed url for asset
+								signedURL, err := fAPI.GetSignedURLOfLegacyBucketPath(output.Output.FileUri)
+								if err != nil {
+									logger.Error("Failed to get signed url",
+										zap.String("output_file_uri", output.Output.FileUri),
+										zap.Any("error", errors.WithStack(err)),
+									)
+									if len(errChannel) == 0 {
+										errChannel <- err
+									}
+									return
+								}
+								resultAbsPath := strings.Join(strings.Split(strings.Split(output.Output.FileUri, "results/")[1], "/")[1:], "/")
+								outputURLs.AssetURLs[resultAbsPath] = signedURL
+							}
+						}
+
+						if strings.HasSuffix(output.Output.FileUri, "video.mp4") {
+							//create signed url for asset
+							signedURL, err := fAPI.GetSignedURLOfLegacyBucketPath(output.Output.FileUri)
+							if err != nil {
+								logger.Error("Failed to get signed url",
+									zap.String("output_file_uri", output.Output.FileUri),
+									zap.Any("error", errors.WithStack(err)),
+								)
+								if len(errChannel) == 0 {
+									errChannel <- err
+								}
+								return
+							}
+							outputURLs.VideoURL = signedURL
+						}
+
+						if strings.HasSuffix(output.Output.FileUri, "sitemap.png") {
+							//create signed url for asset
+							signedURL, err := fAPI.GetSignedURLOfLegacyBucketPath(output.Output.FileUri)
+							if err != nil {
+								logger.Error("Failed to get signed url",
+									zap.String("output_file_uri", output.Output.FileUri),
+									zap.Any("error", errors.WithStack(err)),
+								)
+								if len(errChannel) == 0 {
+									errChannel <- err
+								}
+								return
+							}
+							outputURLs.ActivityMapURL = signedURL
+						}
+
+						if strings.HasSuffix(output.Output.FileUri, ".png") && !strings.HasSuffix(output.Output.FileUri, "sitemap.png") {
+							//create signed url for asset
+							signedURL, err := fAPI.GetSignedURLOfLegacyBucketPath(output.Output.FileUri)
+							if err != nil {
+								logger.Error("Failed to get signed url",
+									zap.String("output_file_uri", output.Output.FileUri),
+									zap.Any("error", errors.WithStack(err)),
+								)
+								if len(errChannel) == 0 {
+									errChannel <- err
+								}
+								return
+							}
+							outputURLs.ScreenshotURLs = append(outputURLs.ScreenshotURLs, signedURL)
+						}
+					}
+				}
+				if detail.TestExecutionStep.TestSuiteOverviews != nil {
+					//get xmls
+					for _, overview := range detail.TestExecutionStep.TestSuiteOverviews {
+						//create signed url for assets
+						signedURL, err := fAPI.GetSignedURLOfLegacyBucketPath(overview.XmlSource.FileUri)
+						if err != nil {
+							logger.Error("Failed to get signed url",
+								zap.String("xml_source_file_uri", overview.XmlSource.FileUri),
+								zap.Any("error", errors.WithStack(err)),
+							)
+							if len(errChannel) == 0 {
+								errChannel <- err
+							}
+							return
+						}
+
+						outputURLs.TestSuiteXMLURL = signedURL
+					}
+				}
+				test.OutputURLs = outputURLs
+			}
+
+			if test.OutputURLs.ActivityMapURL != "" {
+				test.TestType = "robo"
+			}
+			if test.OutputURLs.TestSuiteXMLURL != "" {
+				test.TestType = "instrumentation"
+			}
+
+			testDetails[i] = test
+		}(d, index)
+	}
+	wg.Wait()
+	close(errChannel)
+
+	var err error
+	err = <-errChannel
+	return testDetails, err
 }

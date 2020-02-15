@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/gobuffalo/uuid"
+	uuid "github.com/satori/go.uuid"
 	"go.uber.org/zap"
 
 	segment "gopkg.in/segmentio/analytics-go.v3"
