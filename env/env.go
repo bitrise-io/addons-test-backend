@@ -19,10 +19,11 @@ const (
 
 // AppEnv ...
 type AppEnv struct {
-	Port        string
-	Environment string
-	Logger      *zap.Logger
-	AppService  dataservices.App
+	Port         string
+	Environment  string
+	Logger       *zap.Logger
+	AppService   dataservices.App
+	BuildService dataservices.Build
 }
 
 // New ...
