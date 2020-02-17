@@ -48,6 +48,8 @@ github.com/bitrise-io/addons-firebase-testlab v0.0.0-20200108160005-8fbcdcccd2ea
 github.com/bitrise-io/addons-firebase-testlab v0.0.0-20200108160005-8fbcdcccd2ea/go.mod h1:KgPEegGG1kyuCp8OSwIiG6Rnl0dCxzOuyKAN5mmYnpQ=
 github.com/bitrise-io/api-utils v0.0.0-20200215134217-a8cffc72b7d5 h1:A6hqxt/+8Qi2hHTlO3EMYdrzHs17FvCDmYVnvRkkVDs=
 github.com/bitrise-io/api-utils v0.0.0-20200215134217-a8cffc72b7d5/go.mod h1:ztKZ8ThsKf/QydBCkkN9lSUSiv2JER/bKjFhaQ+aLJA=
+github.com/bitrise-io/go-crypto v0.0.0-20190716130036-2cb4b060f33a h1:X2UcVlp0ntttaUy45VqW6WWTfLxtvGvqFIzHz4IztIU=
+github.com/bitrise-io/go-crypto v0.0.0-20190716130036-2cb4b060f33a/go.mod h1:NuU9NwkIiHHcV3nXuGa2vxxadPUDujRRJjhf+OPZ5Mk=
 github.com/bitrise-io/go-utils v0.0.0-20200106143038-948e80486906 h1:1bIHcDPL78N3rtZ1oblhtxu1BHGIJiHajE4JeE4NOkw=
 github.com/bitrise-io/go-utils v0.0.0-20200106143038-948e80486906/go.mod h1:yGLuQLZZH9Fdhke/KhtdGCEqZhcvaV9hoYNMlOWV75c=
 github.com/blang/semver v3.5.1+incompatible h1:cQNTCjp13qL8KC3Nbxr/y2Bqb63oX6wdnnjpJbkM4JQ=
@@ -772,6 +774,8 @@ github.com/markbates/oncer v0.0.0-20181014194634-05fccaae8fc4/go.mod h1:Ld9puTsI
 github.com/markbates/oncer v0.0.0-20181203154359-bf2de49a0be2/go.mod h1:Ld9puTsIW75CHf65OeIOkyKbteujpZVXDpWK6YGZbxE=
 github.com/markbates/oncer v1.0.0 h1:E83IaVAHygyndzPimgUYJjbshhDTALZyXxvk9FOlQRY=
 github.com/markbates/oncer v1.0.0/go.mod h1:Z59JA581E9GP6w96jai+TGqafHPW+cPfRxz2aSZ0mcI=
+github.com/markbates/pop v4.12.2+incompatible h1:HNl+SlGKVL1oDkEGTnZiDBwQCJO92dG4iSdZ9KrCeyM=
+github.com/markbates/pop v4.12.2+incompatible/go.mod h1:YIVs9IC2pKtxfoIdEd5m2eBbi/DHeo1J8P+ZI4Q9HHo=
 github.com/markbates/refresh v1.4.10/go.mod h1:NDPHvotuZmTmesXxr95C9bjlw1/0frJwtME2dzcVKhc=
 github.com/markbates/refresh v1.4.11/go.mod h1:awpJuyo4zgexB/JaHfmBX0sRdvOjo2dXwIayWIz9i3g=
 github.com/markbates/refresh v1.5.0/go.mod h1:ZYMLkxV+x7wXQ2Xd7bXAPyF0EXiEWAMfiy/4URYb1+M=
@@ -884,6 +888,8 @@ github.com/rs/zerolog v1.15.0/go.mod h1:xYTKnLHcpfU2225ny5qZjxnj9NvkumZYjJHlAThC
 github.com/russross/blackfriday v1.5.2/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/satori/go.uuid v1.2.0 h1:0uYX9dsZ2yD7q2RtLRtPSdGDWzjeM3TbMJP9utgA0ww=
 github.com/satori/go.uuid v1.2.0/go.mod h1:dA0hQrYB0VpLJoorglMZABFdXlWrHn1NEOzdhQKdks0=
+github.com/savaki/amplitude-go v0.0.0-20160610055645-f62e3b57c0e4 h1:97Sfylvx7jxNwMDa6m3wRYQ0sCwP8R7ZGneF57jTSP0=
+github.com/savaki/amplitude-go v0.0.0-20160610055645-f62e3b57c0e4/go.mod h1:+dADDNKPvI1c6TuMfh+UakKF37l2i4ok/+wpEVT2KII=
 github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3 h1:ZuhckGJ10ulaKkdvJtiAqsLTiPrLaXSdnVgXJKJkTxE=
 github.com/segmentio/backo-go v0.0.0-20200129164019-23eae7c10bd3/go.mod h1:9/Rh6yILuLysoQnZ2oNooD2g7aBnvM7r/fNVxRNWfBc=
 github.com/serenize/snaker v0.0.0-20171204205717-a683aaf2d516 h1:ofR1ZdrNSkiWcMsRrubK9tb2/SlZVWttAfqUjJi6QYc=
