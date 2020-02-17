@@ -7,6 +7,8 @@ import (
 	"github.com/bitrise-io/addons-test-backend/dataservices"
 	"github.com/bitrise-io/addons-test-backend/models"
 	"github.com/bitrise-io/api-utils/logging"
+	"github.com/bitrise-io/api-utils/providers"
+	"github.com/gorilla/sessions"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -21,13 +23,16 @@ const (
 
 // AppEnv ...
 type AppEnv struct {
-	Port              string
-	Environment       string
-	Logger            *zap.Logger
-	AnalyticsClient   analytics.Interface
-	AppService        dataservices.App
-	BuildService      dataservices.Build
-	TestReportService dataservices.TestReport
+	Port               string
+	Environment        string
+	Logger             *zap.Logger
+	RequestParams      providers.RequestParamsInterface
+	AnalyticsClient    analytics.Interface
+	SessionCookieStore *sessions.CookieStore
+	SessionName        string
+	AppService         dataservices.App
+	BuildService       dataservices.Build
+	TestReportService  dataservices.TestReport
 }
 
 // New ...
@@ -43,11 +48,19 @@ func New(db *gorm.DB) (*AppEnv, error) {
 		env.Environment = ServerEnvDevelopment
 	}
 	env.Logger = logging.WithContext(nil)
+	env.RequestParams = &providers.RequestParams{}
 	analyticsClient, err := analytics.NewClient(env.Logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to initialize analytics client")
 	}
 	env.AnalyticsClient = &analyticsClient
+	sessionSecret, ok := os.LookupEnv("SESSION_SECRET")
+	if !ok && env.Environment == ServerEnvProduction {
+		return nil, errors.New("Session secret must be set in production")
+	}
+
+	env.SessionCookieStore = sessions.NewCookieStore([]byte(sessionSecret))
+	env.SessionName = "_addons-firebase-testlab_session"
 
 	env.AppService = &models.AppService{DB: db}
 	env.BuildService = &models.BuildService{DB: db}
