@@ -7,7 +7,7 @@ require (
 	github.com/DataDog/datadog-go v3.4.0+incompatible // indirect
 	github.com/bitrise-io/addons-firebase-testlab v0.0.0-20200108160005-8fbcdcccd2ea
 	github.com/bitrise-io/api-utils v0.0.0-20200215134217-a8cffc72b7d5
-	github.com/bitrise-io/go-crypto v0.0.0-20190716130036-2cb4b060f33a // indirect
+	github.com/bitrise-io/go-crypto v0.0.0-20190716130036-2cb4b060f33a
 	github.com/bitrise-io/go-utils v0.0.0-20200106143038-948e80486906
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/c2fo/testify v0.0.0-20150827203832-fba96363964a

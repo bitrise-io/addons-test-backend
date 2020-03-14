@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/bitrise-io/addons-test-backend/models"
+	"github.com/bitrise-io/api-utils/httpresponse"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/pkg/errors"
 )
@@ -47,7 +48,7 @@ func getEnv(key, fallback string) string {
 
 func closeResponseBody(resp *http.Response) {
 	if err := resp.Body.Close(); err != nil {
-		log.Errorf("Failed to close response body, error: %+v", errors.WithStack(err))
+		log.Errorf("Failed to close response body, error: %+v", err)
 	}
 }
 
@@ -58,7 +59,7 @@ func (c *Client) newRequest(method string, action string, payload []byte) (*http
 
 	req, err := http.NewRequest(method, endpoint, bytes.NewBuffer(payload))
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	req.Header.Set("Bitrise-Addon-Auth-Token", c.apiToken)
@@ -71,9 +72,9 @@ func (c *Client) do(req *http.Request, bp *Build) (*http.Response, error) {
 	req.Close = true
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
-	defer closeResponseBody(resp)
+	defer httpresponse.BodyCloseWithErrorLog(resp)
 
 	if resp.StatusCode != http.StatusOK {
 		return resp, nil
@@ -84,7 +85,7 @@ func (c *Client) do(req *http.Request, bp *Build) (*http.Response, error) {
 	}
 
 	if err = json.NewDecoder(resp.Body).Decode(&successResp); err != nil {
-		return resp, errors.WithStack(err)
+		return resp, err
 	}
 
 	*bp = successResp.Data
@@ -98,17 +99,17 @@ type Build struct {
 }
 
 // GetBuildOfApp returns information about a single build.
-func (c *Client) GetBuildOfApp(buildSlug string, appSlug string) (*http.Response, *Build, error) {
+func (c *Client) GetBuildOfApp(buildSlug, appSlug string) (*http.Response, *Build, error) {
 	action := fmt.Sprintf("apps/%s/builds/%s", appSlug, buildSlug)
 	req, err := c.newRequest("GET", action, nil)
 	if err != nil {
-		return nil, nil, errors.WithStack(err)
+		return nil, nil, err
 	}
 
 	var build Build
 	resp, err := c.do(req, &build)
 	if err != nil || resp.StatusCode >= http.StatusBadRequest {
-		return resp, nil, errors.WithStack(err)
+		return resp, nil, err
 	}
 
 	return resp, &build, nil
@@ -119,13 +120,13 @@ func (c *Client) GetLatestBuildOfApp(appSlug string) (*Build, error) {
 	action := fmt.Sprintf("apps/%s/builds?limit=1", appSlug)
 	req, err := c.newRequest("GET", action, nil)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	req.Close = true
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, errors.Errorf("Failed to fetch latest build info: status: %d", resp.StatusCode)
@@ -137,7 +138,7 @@ func (c *Client) GetLatestBuildOfApp(appSlug string) (*Build, error) {
 	defer closeResponseBody(resp)
 
 	if err = json.NewDecoder(resp.Body).Decode(&successResp); err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	if len(successResp.Data) == 0 {
@@ -151,7 +152,7 @@ func (c *Client) GetLatestBuildOfApp(appSlug string) (*Build, error) {
 func (c *Client) RegisterWebhook(app *models.App) (*http.Response, error) {
 	appSecret, err := app.Secret()
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	testingAddonHost, ok := os.LookupEnv("ADDON_HOST")
@@ -166,27 +167,22 @@ func (c *Client) RegisterWebhook(app *models.App) (*http.Response, error) {
 
 	payload, err := json.Marshal(payloadStruct)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	req, err := http.NewRequest("POST", fmt.Sprintf("%s/apps/%s/outgoing-webhooks", c.BaseURL, app.AppSlug), bytes.NewBuffer(payload))
 	req.Header.Set("Bitrise-Addon-Auth-Token", c.apiToken)
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	response, err := client.Do(req)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
-	defer func() {
-		err := response.Body.Close()
-		if err != nil {
-			fmt.Println(errors.WithStack(err))
-		}
-	}()
+	defer httpresponse.BodyCloseWithErrorLog(response)
 
 	if response.StatusCode != http.StatusCreated {
 		return nil, errors.New("Internal error: Failed to register webhook")

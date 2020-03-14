@@ -103,12 +103,12 @@ func LoginPostHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) e
 func fetchBuildSlug(appSlug string) (string, error) {
 	app, err := database.GetApp(&models.App{AppSlug: appSlug})
 	if err != nil {
-		return "", errors.WithStack(err)
+		return "", err
 	}
 	bc := bitrise.NewClient(app.APIToken)
 	build, err := bc.GetLatestBuildOfApp(appSlug)
 	if err != nil {
-		return "", errors.WithStack(err)
+		return "", err
 	}
 	return build.Slug, nil
 }

@@ -1,9 +1,11 @@
 package models
 
 import (
+	"os"
 	"time"
 
 	validation "github.com/bitrise-io/api-utils/models"
+	"github.com/bitrise-io/go-crypto/crypto"
 	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
@@ -46,4 +48,32 @@ func (a *App) BeforeSave(scope *gorm.Scope) error {
 		return errors.New("Validation failed")
 	}
 	return nil
+}
+
+func (a *App) encryptSecret(secret string) error {
+	encryptKey, ok := os.LookupEnv("APP_WEBHOOK_SECRET_ENCRYPT_KEY")
+	if !ok {
+		return errors.New("No encrypt key provided")
+	}
+	encryptedSecret, err := crypto.AES256GCMCipher(secret, a.EncryptedSecretIV, encryptKey)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	a.EncryptedSecret = encryptedSecret
+
+	return nil
+}
+
+// Secret ...
+func (a *App) Secret() (string, error) {
+	encryptKey, ok := os.LookupEnv("APP_WEBHOOK_SECRET_ENCRYPT_KEY")
+	if !ok {
+		return "", errors.New("No encrypt key provided")
+	}
+	secret, err := crypto.AES256GCMDecipher(a.EncryptedSecret, a.EncryptedSecretIV, encryptKey)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	return secret, nil
 }
