@@ -6,6 +6,7 @@ import (
 	"github.com/bitrise-io/addons-test-backend/analytics"
 	"github.com/bitrise-io/addons-test-backend/dataservices"
 	"github.com/bitrise-io/addons-test-backend/models"
+	"github.com/bitrise-io/addons-test-backend/session"
 	"github.com/bitrise-io/api-utils/logging"
 	"github.com/bitrise-io/api-utils/providers"
 	"github.com/gorilla/sessions"
@@ -30,6 +31,7 @@ type AppEnv struct {
 	AnalyticsClient    analytics.Interface
 	SessionCookieStore *sessions.CookieStore
 	SessionName        string
+	Session            session.Interface
 	AppService         dataservices.App
 	BuildService       dataservices.Build
 	TestReportService  dataservices.TestReport

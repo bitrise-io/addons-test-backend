@@ -15,5 +15,8 @@ func CommonMiddleware(appEnv *env.AppEnv) alice.Chain {
 			middleware.CreateRedirectToHTTPSMiddleware(),
 		)
 	}
-	return baseMiddleware.Append(middleware.CreateOptionsRequestTerminatorMiddleware())
+	return baseMiddleware.Append(
+		middleware.CreateOptionsRequestTerminatorMiddleware(),
+		setupSession(appEnv),
+	)
 }
