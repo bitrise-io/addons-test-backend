@@ -27,6 +27,7 @@ type AppEnv struct {
 	Port               string
 	Environment        string
 	Logger             *zap.Logger
+	SSOToken           string
 	RequestParams      providers.RequestParamsInterface
 	AnalyticsClient    analytics.Interface
 	SessionCookieStore *sessions.CookieStore

@@ -12,10 +12,8 @@ import (
 
 	"github.com/bitrise-io/api-utils/httpresponse"
 
-	"github.com/bitrise-io/addons-firebase-testlab/analyticsutils"
-	"github.com/bitrise-io/addons-firebase-testlab/bitrise"
-	"github.com/bitrise-io/addons-firebase-testlab/configs"
 	"github.com/bitrise-io/addons-firebase-testlab/database"
+	"github.com/bitrise-io/addons-test-backend/bitrise"
 	"github.com/bitrise-io/addons-test-backend/env"
 	"github.com/bitrise-io/addons-test-backend/models"
 	"github.com/pkg/errors"
@@ -38,19 +36,13 @@ func LoginPostHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) e
 		zap.String("build_slug", buildSlug),
 	)
 
-	analyticsutils.SendAddonEvent(analyticsutils.EventAddonSSOLogin, appSlug, "", "")
-
-	session, err := env.SessionStore.Get(r, env.SessionName)
-	if err != nil {
-		return errors.Wrap(err, "Failed to get session store")
-	}
-	appSlugStored := session.Values["app_slug"]
+	appSlugStored := env.Session.Get("app_slug")
 	if appSlugStored != "" && appSlug == appSlugStored {
 		if buildSlug == "" {
 			var err error
 			buildSlug, err = fetchBuildSlug(appSlug)
 			if err != nil {
-				return errors.Wrap(err, "Failed to fetch latest build slug for app")
+				return errors.WithMessage(err, "Failed to fetch latest build slug for app")
 			}
 		}
 		http.Redirect(w, r, fmt.Sprintf("/builds/%s", buildSlug), http.StatusMovedPermanently)
@@ -59,7 +51,7 @@ func LoginPostHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) e
 
 	i, err := strconv.ParseInt(timestamp, 10, 64)
 	if err != nil {
-		return errors.Wrap(err, "Failed to parse timestamp int")
+		return errors.WithMessage(err, "Failed to parse timestamp int")
 	}
 	tm := time.Unix(i, 0)
 
@@ -76,9 +68,9 @@ func LoginPostHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) e
 		hash = sha1.New()
 	}
 
-	_, err = hash.Write([]byte(fmt.Sprintf("%s:%s:%s", appSlug, configs.GetAddonSSOToken(), timestamp)))
+	_, err = hash.Write([]byte(fmt.Sprintf("%s:%s:%s", appSlug, env.SSOToken, timestamp)))
 	if err != nil {
-		return errors.Wrap(err, "Failed to write into sha1 buffer")
+		return errors.WithMessage(err, "Failed to write into sha1 buffer")
 	}
 	refToken := fmt.Sprintf("%x", hash.Sum(nil))
 
@@ -88,25 +80,24 @@ func LoginPostHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) e
 		return httpresponse.RespondWithForbidden(w)
 	}
 
-	c.Session().Set("app_slug", appSlug)
-	c.Session().Set("app_title", appTitle)
+	env.Session.Set("app_slug", appSlug)
+	env.Session.Set("app_title", appTitle)
 
-	err = c.Session().Save()
+	err = env.Session.Save()
 	if err != nil {
-		logger.Error("Failed to save session", zap.Any("error", errors.WithStack(err)))
-		return c.Render(http.StatusInternalServerError, r.JSON(map[string]string{"error": "Internal error"}))
+		return errors.WithMessage(err, "Failed to save session")
 	}
 
 	if buildSlug == "" {
 		var err error
 		buildSlug, err = fetchBuildSlug(appSlug)
 		if err != nil {
-			logger.Error("Failed to fetch latest build slug for app", zap.Error(err))
-			return c.Render(http.StatusInternalServerError, r.JSON(map[string]string{"error": "Internal error"}))
+			return errors.WithMessage(err, "Failed to fetch latest build slug for app")
 		}
 	}
 
-	return c.Redirect(http.StatusMovedPermanently, fmt.Sprintf("/builds/%s", buildSlug))
+	http.Redirect(w, r, fmt.Sprintf("/builds/%s", buildSlug), http.StatusMovedPermanently)
+	return nil
 }
 
 func fetchBuildSlug(appSlug string) (string, error) {

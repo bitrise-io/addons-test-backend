@@ -8,8 +8,8 @@ import (
 
 // Interface ...
 type Interface interface {
-	Get(*http.Request, string) (interface{}, error)
-	Set(string) error
+	Get(*http.Request, string) interface{}
+	Set(key, value interface{}) error
 	Clear()
 	Save() error
 }
