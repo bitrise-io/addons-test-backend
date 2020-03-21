@@ -5,7 +5,7 @@ import (
 
 	"github.com/bitrise-io/addons-test-backend/actions"
 	"github.com/bitrise-io/addons-test-backend/env"
-	"github.com/bitrise-io/addons-test-backend/middlewares.go"
+	"github.com/bitrise-io/addons-test-backend/middlewares"
 	"github.com/bitrise-io/api-utils/handlers"
 	"github.com/justinas/alice"
 	"gopkg.in/DataDog/dd-trace-go.v1/contrib/gorilla/mux"
@@ -25,6 +25,10 @@ func New(appEnv *env.AppEnv) *mux.Router {
 		{
 			path: "/", middleware: middlewares.CommonMiddleware(appEnv),
 			handler: actions.RootHandler, allowedMethods: []string{"GET", "OPTIONS"},
+		},
+		{
+			path: "/api/app", middleware: middlewares.AuthenticatedAppMiddleware(appEnv),
+			handler: actions.AppGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
 		},
 	} {
 		r.Handle(route.path, route.middleware.Then(actions.Handler{Env: appEnv, H: route.handler})).
