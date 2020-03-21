@@ -5,7 +5,7 @@ import (
 
 	"github.com/bitrise-io/addons-test-backend/analytics"
 	"github.com/bitrise-io/addons-test-backend/dataservices"
-	"github.com/bitrise-io/addons-test-backend/models"
+	"github.com/bitrise-io/addons-test-backend/services"
 	"github.com/bitrise-io/addons-test-backend/session"
 	"github.com/bitrise-io/api-utils/logging"
 	"github.com/bitrise-io/api-utils/providers"
@@ -65,8 +65,8 @@ func New(db *gorm.DB) (*AppEnv, error) {
 	env.SessionCookieStore = sessions.NewCookieStore([]byte(sessionSecret))
 	env.SessionName = "_addons-firebase-testlab_session"
 
-	env.AppService = &models.AppService{DB: db}
-	env.BuildService = &models.BuildService{DB: db}
-	env.TestReportService = &models.TestReportService{DB: db}
+	env.AppService = &services.App{DB: db}
+	env.BuildService = &services.Build{DB: db}
+	env.TestReportService = &services.TestReport{DB: db}
 	return env, nil
 }

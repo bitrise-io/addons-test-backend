@@ -1,17 +1,18 @@
-package models
+package services
 
 import (
+	"github.com/bitrise-io/addons-test-backend/models"
 	validation "github.com/bitrise-io/api-utils/models"
 	"github.com/jinzhu/gorm"
 )
 
-// TestReportService ...
-type TestReportService struct {
+// TestReport ...
+type TestReport struct {
 	DB *gorm.DB
 }
 
 // Create ...
-func (s *TestReportService) Create(testReport *TestReport) (*TestReport, []error, error) {
+func (s *TestReport) Create(testReport *models.TestReport) (*models.TestReport, []error, error) {
 	result := s.DB.Create(testReport)
 	verrs := validation.ValidationErrors(result.GetErrors())
 	if len(verrs) > 0 {
@@ -24,17 +25,18 @@ func (s *TestReportService) Create(testReport *TestReport) (*TestReport, []error
 }
 
 // Find ...
-func (s *TestReportService) Find(testReport *TestReport) (*TestReport, error) {
-	err := s.DB.Where(testReport).First(testReport).Error
+func (s *TestReport) Find(testReport *models.TestReport) (*models.TestReport, error) {
+	var tr models.TestReport
+	err := s.DB.Where(testReport).First(&tr).Error
 	if err != nil {
 		return nil, err
 	}
-	return testReport, nil
+	return &tr, nil
 }
 
 // FindAll ...
-func (s *TestReportService) FindAll(testReport *TestReport) ([]TestReport, error) {
-	var testReports []TestReport
+func (s *TestReport) FindAll(testReport *models.TestReport) ([]models.TestReport, error) {
+	var testReports []models.TestReport
 	err := s.DB.Where(testReport).Find(&testReports).Error
 	if err != nil {
 		return nil, err
