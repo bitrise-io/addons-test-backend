@@ -8,8 +8,8 @@ import (
 
 // Interface ...
 type Interface interface {
-	Get(*http.Request, string) interface{}
-	Set(key, value interface{}) error
+	Get(interface{}) interface{}
+	Set(key, value interface{})
 	Clear()
 	Save() error
 }
@@ -37,7 +37,7 @@ func (c *Client) Set(key, value interface{}) {
 }
 
 // Clear ...
-func (c *Client) Clear(r *http.Request) {
+func (c *Client) Clear() {
 	for _, value := range c.session.Values {
 		delete(c.session.Values, value)
 	}

@@ -12,7 +12,6 @@ import (
 
 	"github.com/bitrise-io/api-utils/httpresponse"
 
-	"github.com/bitrise-io/addons-firebase-testlab/database"
 	"github.com/bitrise-io/addons-test-backend/bitrise"
 	"github.com/bitrise-io/addons-test-backend/env"
 	"github.com/bitrise-io/addons-test-backend/models"
@@ -21,32 +20,34 @@ import (
 )
 
 // LoginPostHandler ...
-func LoginPostHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) error {
+func LoginPostHandler(appEnv *env.AppEnv, w http.ResponseWriter, r *http.Request) error {
 	timestamp := r.FormValue("timestamp")
 	token := r.FormValue("token")
 	appSlug := r.FormValue("app_slug")
-	requestParams := env.RequestParams.Get(r)
+	requestParams := appEnv.RequestParams.Get(r)
 	buildSlug := requestParams["build_slug"]
 	appTitle := requestParams["app_title"]
 
-	env.Logger.Info("Login form data",
+	appEnv.Logger.Info("Login form data",
 		zap.String("timestamp", timestamp),
 		zap.String("token", token),
 		zap.String("app_slug", appSlug),
 		zap.String("build_slug", buildSlug),
 	)
 
-	appSlugStored := env.Session.Get("app_slug")
-	if appSlugStored != "" && appSlug == appSlugStored {
-		if buildSlug == "" {
-			var err error
-			buildSlug, err = fetchBuildSlug(appSlug)
-			if err != nil {
-				return errors.WithMessage(err, "Failed to fetch latest build slug for app")
+	appSlugStored, ok := appEnv.Session.Get("app_slug").(string)
+	if ok {
+		if appSlug == appSlugStored {
+			if buildSlug == "" {
+				var err error
+				buildSlug, err = fetchBuildSlug(appEnv, appSlug)
+				if err != nil {
+					return errors.WithMessage(err, "Failed to fetch latest build slug for app")
+				}
 			}
+			http.Redirect(w, r, fmt.Sprintf("/builds/%s", buildSlug), http.StatusMovedPermanently)
+			return nil
 		}
-		http.Redirect(w, r, fmt.Sprintf("/builds/%s", buildSlug), http.StatusMovedPermanently)
-		return nil
 	}
 
 	i, err := strconv.ParseInt(timestamp, 10, 64)
@@ -68,29 +69,29 @@ func LoginPostHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) e
 		hash = sha1.New()
 	}
 
-	_, err = hash.Write([]byte(fmt.Sprintf("%s:%s:%s", appSlug, env.SSOToken, timestamp)))
+	_, err = hash.Write([]byte(fmt.Sprintf("%s:%s:%s", appSlug, appEnv.SSOToken, timestamp)))
 	if err != nil {
 		return errors.WithMessage(err, "Failed to write into sha1 buffer")
 	}
 	refToken := fmt.Sprintf("%x", hash.Sum(nil))
 
 	if token != refToken {
-		env.Logger.Error("Token mismatch")
-		env.Session.Clear()
+		appEnv.Logger.Error("Token mismatch")
+		appEnv.Session.Clear()
 		return httpresponse.RespondWithForbidden(w)
 	}
 
-	env.Session.Set("app_slug", appSlug)
-	env.Session.Set("app_title", appTitle)
+	appEnv.Session.Set("app_slug", appSlug)
+	appEnv.Session.Set("app_title", appTitle)
 
-	err = env.Session.Save()
+	err = appEnv.Session.Save()
 	if err != nil {
 		return errors.WithMessage(err, "Failed to save session")
 	}
 
 	if buildSlug == "" {
 		var err error
-		buildSlug, err = fetchBuildSlug(appSlug)
+		buildSlug, err = fetchBuildSlug(appEnv, appSlug)
 		if err != nil {
 			return errors.WithMessage(err, "Failed to fetch latest build slug for app")
 		}
@@ -100,10 +101,10 @@ func LoginPostHandler(env *env.AppEnv, w http.ResponseWriter, r *http.Request) e
 	return nil
 }
 
-func fetchBuildSlug(appSlug string) (string, error) {
-	app, err := database.GetApp(&models.App{AppSlug: appSlug})
+func fetchBuildSlug(appEnv *env.AppEnv, appSlug string) (string, error) {
+	app, err := appEnv.AppService.Find(&models.App{AppSlug: appSlug})
 	if err != nil {
-		return "", err
+		return "", errors.WithMessage(err, "SQL Error")
 	}
 	bc := bitrise.NewClient(app.APIToken)
 	build, err := bc.GetLatestBuildOfApp(appSlug)

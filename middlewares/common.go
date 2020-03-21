@@ -20,3 +20,8 @@ func CommonMiddleware(appEnv *env.AppEnv) alice.Chain {
 		setupSession(appEnv),
 	)
 }
+
+// AuthenticatedAppMiddleware ...
+func AuthenticatedAppMiddleware(appEnv *env.AppEnv) alice.Chain {
+	return CommonMiddleware(appEnv).Append(checkAuthenticatedApp(appEnv))
+}

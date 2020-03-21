@@ -24,18 +24,19 @@ const (
 
 // AppEnv ...
 type AppEnv struct {
-	Port               string
-	Environment        string
-	Logger             *zap.Logger
-	SSOToken           string
-	RequestParams      providers.RequestParamsInterface
-	AnalyticsClient    analytics.Interface
-	SessionCookieStore *sessions.CookieStore
-	SessionName        string
-	Session            session.Interface
-	AppService         dataservices.App
-	BuildService       dataservices.Build
-	TestReportService  dataservices.TestReport
+	Port                            string
+	Environment                     string
+	ShouldSkipSessionAuthentication bool
+	Logger                          *zap.Logger
+	SSOToken                        string
+	RequestParams                   providers.RequestParamsInterface
+	AnalyticsClient                 analytics.Interface
+	SessionCookieStore              *sessions.CookieStore
+	SessionName                     string
+	Session                         session.Interface
+	AppService                      dataservices.App
+	BuildService                    dataservices.Build
+	TestReportService               dataservices.TestReport
 }
 
 // New ...
@@ -50,6 +51,7 @@ func New(db *gorm.DB) (*AppEnv, error) {
 	if !ok {
 		env.Environment = ServerEnvDevelopment
 	}
+	env.ShouldSkipSessionAuthentication = os.Getenv("SKIP_SESSION_AUTH") == "yes"
 	env.Logger = logging.WithContext(nil)
 	env.RequestParams = &providers.RequestParams{}
 	analyticsClient, err := analytics.NewClient(env.Logger)
