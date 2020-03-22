@@ -6,11 +6,12 @@ import (
 	"sync"
 	"time"
 
+	"go.uber.org/zap"
 	"google.golang.org/api/googleapi"
 	storage "google.golang.org/api/storage/v1"
 
 	storagesu "cloud.google.com/go/storage"
-	"github.com/bitrise-io/addons-firebase-testlab/metrics"
+	"github.com/bitrise-io/addons-test-backend/metrics"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/sliceutil"
 	testing "google.golang.org/api/testing/v1"
@@ -28,11 +29,12 @@ const (
 )
 
 // New ...
-func New(jwtModel *JWTModel, projectID, bucket string) (*APIModel, error) {
+func New(jwtModel *JWTModel, projectID, bucket string, logger *zap.Logger) (*APIModel, error) {
 	return &APIModel{
 		JWT:       jwtModel,
 		ProjectID: projectID,
 		Bucket:    bucket,
+		Logger:    logger,
 	}, nil
 }
 
@@ -135,7 +137,7 @@ func (api *APIModel) GetProfileName() string {
 
 // StartTestMatrix ...
 func (api *APIModel) StartTestMatrix(appSlug, buildSlug string, testMatrix *testing.TestMatrix) (*testing.TestMatrix, error) {
-	tracker := metrics.NewDogStatsDMetrics("")
+	tracker := metrics.NewDogStatsDMetrics("", api.Logger)
 	defer tracker.Close()
 
 	testingService, err := testing.New(api.JWT.Client)
@@ -426,7 +428,7 @@ func (api *APIModel) getAppBucketPath(buildSlug string, appFileName string) stri
 
 // GetTestsByHistoryAndExecutionID ...
 func (api *APIModel) GetTestsByHistoryAndExecutionID(historyID, executionID, appSlug, buildSlug string, fields ...googleapi.Field) (*toolresults.ListStepsResponse, error) {
-	tracker := metrics.NewDogStatsDMetrics("")
+	tracker := metrics.NewDogStatsDMetrics("", api.Logger)
 	defer tracker.Close()
 
 	resultsService, err := toolresults.New(api.JWT.Client)
@@ -468,7 +470,7 @@ func (api *APIModel) GetTestMetricSamples(historyID, executionID, stepID, appSlu
 			defer func() {
 				wg.Done()
 			}()
-			tracker := metrics.NewDogStatsDMetrics("")
+			tracker := metrics.NewDogStatsDMetrics("", api.Logger)
 			defer tracker.Close()
 
 			samplesListCall := toolresultsService.Projects.Histories.Executions.Steps.PerfSampleSeries.Samples.List(api.ProjectID, historyID, executionID, stepID, fmt.Sprintf("%d", id))
@@ -527,7 +529,7 @@ func fillUnixTimeDataHash(metricsData *toolresults.ListPerfSamplesResponse) map[
 
 // DownloadTestAssets ...
 func (api *APIModel) DownloadTestAssets(buildSlug string) (map[string]string, error) {
-	tracker := metrics.NewDogStatsDMetrics("")
+	tracker := metrics.NewDogStatsDMetrics("", api.Logger)
 	defer tracker.Close()
 
 	storageService, err := storage.New(api.JWT.Client)

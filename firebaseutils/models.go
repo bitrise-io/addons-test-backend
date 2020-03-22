@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"golang.org/x/oauth2/jwt"
@@ -15,6 +16,7 @@ type APIModel struct {
 	ProjectID string
 	Bucket    string
 	JWT       *JWTModel
+	Logger    *zap.Logger
 }
 
 // JWTModel ...

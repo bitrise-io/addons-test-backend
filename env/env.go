@@ -74,7 +74,7 @@ func New(db *gorm.DB) (*AppEnv, error) {
 	}
 	gcProjectID := os.Getenv("PROJECT_ID")
 	gcBucket := os.Getenv("BUCKET")
-	fAPI, err := firebaseutils.New(gcJWTModel, gcProjectID, gcBucket)
+	fAPI, err := firebaseutils.New(gcJWTModel, gcProjectID, gcBucket, env.Logger)
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to create Firebase API model")
 	}
