@@ -18,6 +18,7 @@ func CommonMiddleware(appEnv *env.AppEnv) alice.Chain {
 	return baseMiddleware.Append(
 		middleware.CreateOptionsRequestTerminatorMiddleware(),
 		setupSession(appEnv),
+		setupLogger(appEnv),
 	)
 }
 
