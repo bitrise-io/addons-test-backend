@@ -30,6 +30,10 @@ func New(appEnv *env.AppEnv) *mux.Router {
 			path: "/api/app", middleware: middlewares.AuthenticatedAppMiddleware(appEnv),
 			handler: actions.AppGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
 		},
+		{
+			path: "/builds/{build_slug}/steps/{step_id}", middleware: middlewares.CommonMiddleware(appEnv),
+			handler: actions.StepGetHandler, allowedMethods: []string{"GET", "OPTIONS}"},
+		},
 	} {
 		r.Handle(route.path, route.middleware.Then(actions.Handler{Env: appEnv, H: route.handler})).
 			Methods(route.allowedMethods...)
