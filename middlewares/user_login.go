@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/bitrise-io/addons-firebase-testlab/database"
 	"github.com/bitrise-io/addons-test-backend/env"
+	"github.com/bitrise-io/addons-test-backend/models"
 	"github.com/bitrise-io/api-utils/httpresponse"
+	"github.com/jinzhu/gorm"
 	"github.com/pkg/errors"
 )
 
@@ -19,14 +20,16 @@ func checkAuthenticatedApp(appEnv *env.AppEnv) func(http.Handler) http.Handler {
 
 			sessionAppSlug, ok := appEnv.Session.Get("app_slug").(string)
 			if ok {
-				exists, err := database.IsAppExists(sessionAppSlug)
-				if err != nil {
+				_, err := appEnv.AppService.Find(&models.App{AppSlug: sessionAppSlug})
+				switch {
+				case gorm.IsRecordNotFoundError(err):
+					httpresponse.RespondWithNotFoundErrorNoErr(w)
+					return
+				case err != nil:
 					httpresponse.RespondWithInternalServerError(w, errors.WithMessage(err, "SQL Error"))
 					return
 				}
-				if exists {
-					return
-				}
+				return
 			}
 			httpresponse.RespondWithForbiddenNoErr(w)
 		})
