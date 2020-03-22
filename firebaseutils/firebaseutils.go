@@ -10,7 +10,6 @@ import (
 	storage "google.golang.org/api/storage/v1"
 
 	storagesu "cloud.google.com/go/storage"
-	"github.com/bitrise-io/addons-firebase-testlab/configs"
 	"github.com/bitrise-io/addons-firebase-testlab/metrics"
 	"github.com/bitrise-io/go-utils/log"
 	"github.com/bitrise-io/go-utils/sliceutil"
@@ -29,10 +28,11 @@ const (
 )
 
 // New ...
-func New(jwtModel *JWTModel, projectID string) (*APIModel, error) {
+func New(jwtModel *JWTModel, projectID, bucket string) (*APIModel, error) {
 	return &APIModel{
 		JWT:       jwtModel,
 		ProjectID: projectID,
+		Bucket:    bucket,
 	}, nil
 }
 
@@ -114,7 +114,7 @@ func (api *APIModel) CancelTestMatrix(matrixID string) (string, error) {
 		return "", err
 	}
 
-	cancelCall := testingService.Projects.TestMatrices.Cancel(configs.GetProjectID(), matrixID)
+	cancelCall := testingService.Projects.TestMatrices.Cancel(api.ProjectID, matrixID)
 	cancelResp, err := cancelCall.Do()
 	if err != nil {
 		return "", err
@@ -138,17 +138,17 @@ func (api *APIModel) StartTestMatrix(appSlug, buildSlug string, testMatrix *test
 	tracker := metrics.NewDogStatsDMetrics("")
 	defer tracker.Close()
 
-	testingService, err := testing.New(configs.GetJWTModel().Client)
+	testingService, err := testing.New(api.JWT.Client)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create testing service, error: %s", err)
 	}
 
-	toolresultsService, err := toolresults.New(configs.GetJWTModel().Client)
+	toolresultsService, err := toolresults.New(api.JWT.Client)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to create toolresults service, error: %s", err)
 	}
 
-	listHistory := toolresultsService.Projects.Histories.List(configs.GetProjectID())
+	listHistory := toolresultsService.Projects.Histories.List(api.ProjectID)
 	listHistory = listHistory.FilterByName(appSlug)
 	histories, err := listHistory.Do()
 	if err != nil {
@@ -168,7 +168,7 @@ func (api *APIModel) StartTestMatrix(appSlug, buildSlug string, testMatrix *test
 	}
 
 	if historyID == "" {
-		createHistory := toolresultsService.Projects.Histories.Create(configs.GetProjectID(), &toolresults.History{DisplayName: appSlug, Name: appSlug})
+		createHistory := toolresultsService.Projects.Histories.Create(api.ProjectID, &toolresults.History{DisplayName: appSlug, Name: appSlug})
 		newHistory, err := createHistory.Do()
 		if err != nil {
 			return nil, fmt.Errorf("Failed to create history, error: %s", err)
@@ -179,25 +179,25 @@ func (api *APIModel) StartTestMatrix(appSlug, buildSlug string, testMatrix *test
 
 	if testMatrix.TestSpecification.AndroidInstrumentationTest != nil &&
 		(testMatrix.TestSpecification.AndroidInstrumentationTest.AppApk == nil && testMatrix.TestSpecification.AndroidInstrumentationTest.AppBundle == nil) {
-		testMatrix.TestSpecification.AndroidInstrumentationTest.AppApk = &testing.FileReference{GcsPath: getAppBucketPath(buildSlug, "app.apk")}
-		testMatrix.TestSpecification.AndroidInstrumentationTest.TestApk = &testing.FileReference{GcsPath: getAppBucketPath(buildSlug, "app-test.apk")}
+		testMatrix.TestSpecification.AndroidInstrumentationTest.AppApk = &testing.FileReference{GcsPath: api.getAppBucketPath(buildSlug, "app.apk")}
+		testMatrix.TestSpecification.AndroidInstrumentationTest.TestApk = &testing.FileReference{GcsPath: api.getAppBucketPath(buildSlug, "app-test.apk")}
 	}
 	if testMatrix.TestSpecification.AndroidRoboTest != nil &&
 		(testMatrix.TestSpecification.AndroidRoboTest.AppApk == nil && testMatrix.TestSpecification.AndroidRoboTest.AppBundle == nil) {
-		testMatrix.TestSpecification.AndroidRoboTest.AppApk = &testing.FileReference{GcsPath: getAppBucketPath(buildSlug, "app.apk")}
+		testMatrix.TestSpecification.AndroidRoboTest.AppApk = &testing.FileReference{GcsPath: api.getAppBucketPath(buildSlug, "app.apk")}
 	}
 	if testMatrix.TestSpecification.AndroidTestLoop != nil &&
 		(testMatrix.TestSpecification.AndroidTestLoop.AppApk == nil && testMatrix.TestSpecification.AndroidTestLoop.AppBundle == nil) {
-		testMatrix.TestSpecification.AndroidTestLoop.AppApk = &testing.FileReference{GcsPath: getAppBucketPath(buildSlug, "app-test.apk")}
+		testMatrix.TestSpecification.AndroidTestLoop.AppApk = &testing.FileReference{GcsPath: api.getAppBucketPath(buildSlug, "app-test.apk")}
 	}
 
 	if testMatrix.TestSpecification.IosXcTest != nil {
-		testMatrix.TestSpecification.IosXcTest.TestsZip = &testing.FileReference{GcsPath: getAppBucketPath(buildSlug, "app.apk")}
+		testMatrix.TestSpecification.IosXcTest.TestsZip = &testing.FileReference{GcsPath: api.getAppBucketPath(buildSlug, "app.apk")}
 	}
 
-	testMatrix.ResultStorage = &testing.ResultStorage{GoogleCloudStorage: &testing.GoogleCloudStorage{GcsPath: getResultsBucketPath(buildSlug)}, ToolResultsHistory: &testing.ToolResultsHistory{ProjectId: configs.GetProjectID(), HistoryId: historyID}}
+	testMatrix.ResultStorage = &testing.ResultStorage{GoogleCloudStorage: &testing.GoogleCloudStorage{GcsPath: api.getResultsBucketPath(buildSlug)}, ToolResultsHistory: &testing.ToolResultsHistory{ProjectId: api.ProjectID, HistoryId: historyID}}
 
-	testMatrixCall := testingService.Projects.TestMatrices.Create(configs.GetProjectID(), testMatrix)
+	testMatrixCall := testingService.Projects.TestMatrices.Create(api.ProjectID, testMatrix)
 	testMatrixCall.RequestId(buildSlug)
 
 	//get only required fields
@@ -215,12 +215,12 @@ func (api *APIModel) StartTestMatrix(appSlug, buildSlug string, testMatrix *test
 
 // GetHistoryAndExecutionIDByMatrixID ...
 func (api *APIModel) GetHistoryAndExecutionIDByMatrixID(id string) (*testing.TestMatrix, error) {
-	testingService, err := testing.New(configs.GetJWTModel().Client)
+	testingService, err := testing.New(api.JWT.Client)
 	if err != nil {
 		return nil, err
 	}
 
-	matricesCall := testingService.Projects.TestMatrices.Get(configs.GetProjectID(), id)
+	matricesCall := testingService.Projects.TestMatrices.Get(api.ProjectID, id)
 	matricesCall.Fields("invalidMatrixDetails,state,testExecutions(toolResultsStep(historyId,executionId))")
 	return matricesCall.Do()
 }
@@ -228,7 +228,7 @@ func (api *APIModel) GetHistoryAndExecutionIDByMatrixID(id string) (*testing.Tes
 // GetDeviceCatalog ...
 func (api *APIModel) GetDeviceCatalog() (*testing.TestEnvironmentCatalog, error) {
 	testEnvCatalog := &testing.TestEnvironmentCatalog{}
-	testingService, err := testing.New(configs.GetJWTModel().Client)
+	testingService, err := testing.New(api.JWT.Client)
 	if err != nil {
 		return nil, err
 	}
@@ -285,7 +285,7 @@ func (api *APIModel) TestAssetsUploadURLsAndroid(buildSlug string, assetRequests
 	var assets TestAssetsAndroid
 
 	getAssetURL := func(origFilename, buildSlug, gcsFilename string) (TestAsset, error) {
-		uploadURL, err := storagesu.SignedURL(configs.GetGCSBucket(),
+		uploadURL, err := storagesu.SignedURL(api.Bucket,
 			getTrimmedAppBucketPath(buildSlug, gcsFilename),
 			api.GetSignedURLCredentials("PUT"))
 		if err != nil {
@@ -294,7 +294,7 @@ func (api *APIModel) TestAssetsUploadURLsAndroid(buildSlug string, assetRequests
 
 		return TestAsset{
 			UploadURL: uploadURL,
-			GcsPath:   getAppBucketPath(buildSlug, gcsFilename),
+			GcsPath:   api.getAppBucketPath(buildSlug, gcsFilename),
 			Filename:  origFilename,
 		}, nil
 	}
@@ -349,12 +349,12 @@ func (api *APIModel) TestAssetsUploadURLsAndroid(buildSlug string, assetRequests
 
 // UploadTestAssets ...
 func (api *APIModel) UploadTestAssets(buildSlug string) (*UploadURLRequest, error) {
-	apkUploadURL, err := storagesu.SignedURL(configs.GetGCSBucket(), getTrimmedAppBucketPath(buildSlug, "app.apk"), api.GetSignedURLCredentials("PUT"))
+	apkUploadURL, err := storagesu.SignedURL(api.Bucket, getTrimmedAppBucketPath(buildSlug, "app.apk"), api.GetSignedURLCredentials("PUT"))
 	if err != nil {
 		return nil, err
 	}
 
-	testApkUploadURL, err := storagesu.SignedURL(configs.GetGCSBucket(), getTrimmedAppBucketPath(buildSlug, "app-test.apk"), api.GetSignedURLCredentials("PUT"))
+	testApkUploadURL, err := storagesu.SignedURL(api.Bucket, getTrimmedAppBucketPath(buildSlug, "app-test.apk"), api.GetSignedURLCredentials("PUT"))
 	if err != nil {
 		return nil, err
 	}
@@ -367,7 +367,7 @@ func (api *APIModel) UploadTestAssets(buildSlug string) (*UploadURLRequest, erro
 
 // UploadURLforPath ...
 func (api *APIModel) UploadURLforPath(path string) (string, error) {
-	uploadURL, err := storagesu.SignedURL(configs.GetGCSBucket(), path, api.GetSignedURLCredentials("PUT"))
+	uploadURL, err := storagesu.SignedURL(api.Bucket, path, api.GetSignedURLCredentials("PUT"))
 	if err != nil {
 		return "", err
 	}
@@ -377,7 +377,7 @@ func (api *APIModel) UploadURLforPath(path string) (string, error) {
 
 // DownloadURLforPath ...
 func (api *APIModel) DownloadURLforPath(path string) (string, error) {
-	downloadURL, err := storagesu.SignedURL(configs.GetGCSBucket(), path, api.GetSignedURLCredentials("GET"))
+	downloadURL, err := storagesu.SignedURL(api.Bucket, path, api.GetSignedURLCredentials("GET"))
 	if err != nil {
 		return "", err
 	}
@@ -398,10 +398,10 @@ func (api *APIModel) GetSignedURLCredentials(method string) *storagesu.SignedURL
 // GetSignedURLOfLegacyBucketPath ...
 func (api *APIModel) GetSignedURLOfLegacyBucketPath(path string) (string, error) {
 	normlizedPath := strings.TrimPrefix(path, "gs://")
-	normlizedPath = strings.TrimPrefix(normlizedPath, configs.GetGCSBucket())
+	normlizedPath = strings.TrimPrefix(normlizedPath, api.Bucket)
 	normlizedPath = strings.TrimPrefix(normlizedPath, "/")
 
-	resultFileDownloadURL, err := storagesu.SignedURL(configs.GetGCSBucket(), normlizedPath, api.GetSignedURLCredentials("GET"))
+	resultFileDownloadURL, err := storagesu.SignedURL(api.Bucket, normlizedPath, api.GetSignedURLCredentials("GET"))
 	if err != nil {
 		return "", err
 	}
@@ -413,12 +413,12 @@ func getTrimmedAppBucketPath(buildSlug string, appFileName string) string {
 	return fmt.Sprintf("android-tests/%s/%s", buildSlug, appFileName)
 }
 
-func getResultsBucketPath(buildSlug string) string {
-	return fmt.Sprintf("gs://%s/android-tests/%s/results/", configs.GetGCSBucket(), buildSlug)
+func (api *APIModel) getResultsBucketPath(buildSlug string) string {
+	return fmt.Sprintf("gs://%s/android-tests/%s/results/", api.Bucket, buildSlug)
 }
 
-func getAppBucketPath(buildSlug string, appFileName string) string {
-	return fmt.Sprintf("gs://%s/android-tests/%s/%s", configs.GetGCSBucket(), buildSlug, appFileName)
+func (api *APIModel) getAppBucketPath(buildSlug string, appFileName string) string {
+	return fmt.Sprintf("gs://%s/android-tests/%s/%s", api.Bucket, buildSlug, appFileName)
 }
 
 //
@@ -429,12 +429,12 @@ func (api *APIModel) GetTestsByHistoryAndExecutionID(historyID, executionID, app
 	tracker := metrics.NewDogStatsDMetrics("")
 	defer tracker.Close()
 
-	resultsService, err := toolresults.New(configs.GetJWTModel().Client)
+	resultsService, err := toolresults.New(api.JWT.Client)
 	if err != nil {
 		return nil, err
 	}
 
-	stepsCall := resultsService.Projects.Histories.Executions.Steps.List(configs.GetProjectID(), historyID, executionID)
+	stepsCall := resultsService.Projects.Histories.Executions.Steps.List(api.ProjectID, historyID, executionID)
 	stepsCall.PageSize(50)
 	if len(fields) > 0 {
 		stepsCall.Fields(fields...)
@@ -458,7 +458,7 @@ func (api *APIModel) GetTestMetricSamples(historyID, executionID, stepID, appSlu
 
 	metricSamples := MetricSampleModel{CPU: map[string]float64{}, RAM: map[string]float64{}, NetworkDown: map[string]float64{}, NetworkUp: map[string]float64{}}
 
-	toolresultsService, err := toolresults.New(configs.GetJWTModel().Client)
+	toolresultsService, err := toolresults.New(api.JWT.Client)
 	if err != nil {
 		return MetricSampleModel{}, fmt.Errorf("Failed to create toolresults service, error: %s", err)
 	}
@@ -471,7 +471,7 @@ func (api *APIModel) GetTestMetricSamples(historyID, executionID, stepID, appSlu
 			tracker := metrics.NewDogStatsDMetrics("")
 			defer tracker.Close()
 
-			samplesListCall := toolresultsService.Projects.Histories.Executions.Steps.PerfSampleSeries.Samples.List(configs.GetProjectID(), historyID, executionID, stepID, fmt.Sprintf("%d", id))
+			samplesListCall := toolresultsService.Projects.Histories.Executions.Steps.PerfSampleSeries.Samples.List(api.ProjectID, historyID, executionID, stepID, fmt.Sprintf("%d", id))
 
 			perfSamplesResponse, err := samplesListCall.Do()
 			if err != nil {
@@ -537,7 +537,7 @@ func (api *APIModel) DownloadTestAssets(buildSlug string) (map[string]string, er
 
 	rootObject := getResultsPathPrefix(buildSlug)
 
-	objectsListCall := storageService.Objects.List(configs.GetGCSBucket())
+	objectsListCall := storageService.Objects.List(api.Bucket)
 	objectsListCall.Prefix(rootObject)
 	objects, err := objectsListCall.Do()
 	if err != nil {
@@ -550,7 +550,7 @@ func (api *APIModel) DownloadTestAssets(buildSlug string) (map[string]string, er
 	for _, obj := range objects.Items {
 		trimmedFileName := strings.Replace(strings.TrimPrefix(obj.Name, rootObject), "/", "_", -1)
 
-		resultFileDownloadURL, err := storagesu.SignedURL(configs.GetGCSBucket(), obj.Name, api.GetSignedURLCredentials("GET"))
+		resultFileDownloadURL, err := storagesu.SignedURL(api.Bucket, obj.Name, api.GetSignedURLCredentials("GET"))
 		if err != nil {
 			return nil, err
 		}

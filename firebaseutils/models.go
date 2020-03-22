@@ -13,6 +13,7 @@ import (
 // APIModel ...
 type APIModel struct {
 	ProjectID string
+	Bucket    string
 	JWT       *JWTModel
 }
 
