@@ -5,9 +5,9 @@ import (
 
 	"github.com/bitrise-io/addons-test-backend/analytics"
 	"github.com/bitrise-io/addons-test-backend/dataservices"
+	"github.com/bitrise-io/addons-test-backend/firebaseutils"
 	"github.com/bitrise-io/addons-test-backend/services"
 	"github.com/bitrise-io/addons-test-backend/session"
-	"github.com/bitrise-io/api-utils/logging"
 	"github.com/bitrise-io/api-utils/providers"
 	"github.com/gorilla/sessions"
 	"github.com/jinzhu/gorm"
@@ -34,6 +34,7 @@ type AppEnv struct {
 	SessionCookieStore              *sessions.CookieStore
 	SessionName                     string
 	Session                         session.Interface
+	FirebaseAPI                     *firebaseutils.APIModel
 	AppService                      dataservices.App
 	BuildService                    dataservices.Build
 	TestReportService               dataservices.TestReport
@@ -52,7 +53,6 @@ func New(db *gorm.DB) (*AppEnv, error) {
 		env.Environment = ServerEnvDevelopment
 	}
 	env.ShouldSkipSessionAuthentication = os.Getenv("SKIP_SESSION_AUTH") == "yes"
-	env.Logger = logging.WithContext(nil)
 	env.RequestParams = &providers.RequestParams{}
 	analyticsClient, err := analytics.NewClient(env.Logger)
 	if err != nil {
@@ -66,6 +66,18 @@ func New(db *gorm.DB) (*AppEnv, error) {
 
 	env.SessionCookieStore = sessions.NewCookieStore([]byte(sessionSecret))
 	env.SessionName = "_addons-firebase-testlab_session"
+
+	gcKeyJSON := os.Getenv("SERVICE_ACCOUNT_KEY_JSON")
+	gcJWTModel, err := firebaseutils.NewJWTModel(gcKeyJSON)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to create Firebase API model")
+	}
+	gcProjectID := os.Getenv("PROJECT_ID")
+	fAPI, err := firebaseutils.New(gcJWTModel, gcProjectID)
+	if err != nil {
+		return nil, errors.WithMessage(err, "Failed to create Firebase API model")
+	}
+	env.FirebaseAPI = fAPI
 
 	env.AppService = &services.App{DB: db}
 	env.BuildService = &services.Build{DB: db}

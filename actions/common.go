@@ -27,20 +27,16 @@ type Totals struct {
 }
 
 // GetTotals ...
-func GetTotals(env *env.AppEnv, appSlug, buildSlug string) (Totals, error) {
-	testReportRecords, err := env.TestReportService.FindAll(&models.TestReport{AppSlug: appSlug, BuildSlug: buildSlug})
+func GetTotals(appEnv *env.AppEnv, appSlug, buildSlug string) (Totals, error) {
+	testReportRecords, err := appEnv.TestReportService.FindAll(&models.TestReport{AppSlug: appSlug, BuildSlug: buildSlug})
 	if err != nil {
 		return Totals{}, errors.Wrap(err, "Failed to find test reports in DB")
 	}
 
-	fAPI, err := firebaseutils.New()
-	if err != nil {
-		return Totals{}, errors.Wrap(err, "Failed to create Firebase API model")
-	}
 	parser := &junit.Client{}
 	testReportFiller := testreportfiller.Filler{}
 
-	testReportsWithTestSuites, err := testReportFiller.FillMore(testReportRecords, fAPI, parser, &http.Client{}, "")
+	testReportsWithTestSuites, err := testReportFiller.FillMore(testReportRecords, appEnv.FirebaseAPI, parser, &http.Client{}, "")
 	if err != nil {
 		return Totals{}, errors.Wrap(err, "Failed to enrich test reports with JUNIT results")
 	}
@@ -56,7 +52,7 @@ func GetTotals(env *env.AppEnv, appSlug, buildSlug string) (Totals, error) {
 		}
 	}
 
-	build, err := env.BuildService.Find(&models.Build{AppSlug: appSlug, BuildSlug: buildSlug})
+	build, err := appEnv.BuildService.Find(&models.Build{AppSlug: appSlug, BuildSlug: buildSlug})
 	if err != nil {
 		// no Firebase tests, it's fine, we can return
 		return totals, nil
@@ -67,12 +63,12 @@ func GetTotals(env *env.AppEnv, appSlug, buildSlug string) (Totals, error) {
 		return totals, nil
 	}
 
-	details, err := fAPI.GetTestsByHistoryAndExecutionID(build.TestHistoryID, build.TestExecutionID, appSlug, buildSlug)
+	details, err := appEnv.FirebaseAPI.GetTestsByHistoryAndExecutionID(build.TestHistoryID, build.TestExecutionID, appSlug, buildSlug)
 	if err != nil {
 		return Totals{}, errors.Wrap(err, "Failed to get test details")
 	}
 
-	testDetails, err := fillTestDetails(details, fAPI, env.Logger)
+	testDetails, err := fillTestDetails(details, appEnv.FirebaseAPI, appEnv.Logger)
 	if err != nil {
 		return Totals{}, errors.Wrap(err, "Failed to prepare test details data structure")
 	}

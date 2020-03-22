@@ -29,9 +29,10 @@ const (
 )
 
 // New ...
-func New() (*APIModel, error) {
+func New(jwtModel *JWTModel, projectID string) (*APIModel, error) {
 	return &APIModel{
-		JWT: configs.GetJWTModel(),
+		JWT:       jwtModel,
+		ProjectID: projectID,
 	}, nil
 }
 
@@ -107,8 +108,8 @@ func ValidateIosDevices(devices []*testing.IosDevice) error {
 // TESTING API
 
 // CancelTestMatrix ...
-func CancelTestMatrix(matrixID string) (string, error) {
-	testingService, err := testing.New(configs.GetJWTModel().Client)
+func (api *APIModel) CancelTestMatrix(matrixID string) (string, error) {
+	testingService, err := testing.New(api.JWT.Client)
 	if err != nil {
 		return "", err
 	}
