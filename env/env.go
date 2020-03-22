@@ -1,6 +1,7 @@
 package env
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/bitrise-io/addons-test-backend/analytics"
@@ -28,6 +29,7 @@ type AppEnv struct {
 	Environment                     string
 	ShouldSkipSessionAuthentication bool
 	Logger                          *zap.Logger
+	HostName                        string
 	SSOToken                        string
 	RequestParams                   providers.RequestParamsInterface
 	AnalyticsClient                 analytics.Interface
@@ -67,13 +69,28 @@ func New(db *gorm.DB) (*AppEnv, error) {
 	env.SessionCookieStore = sessions.NewCookieStore([]byte(sessionSecret))
 	env.SessionName = "_addons-firebase-testlab_session"
 
-	gcKeyJSON := os.Getenv("SERVICE_ACCOUNT_KEY_JSON")
+	hostName, err := setRequiredEnv("ADDON_HOST")
+	if err != nil {
+		return nil, err
+	}
+	env.HostName = hostName
+
+	gcKeyJSON, err := setRequiredEnv("SERVICE_ACCOUNT_KEY_JSON")
+	if err != nil {
+		return nil, err
+	}
 	gcJWTModel, err := firebaseutils.NewJWTModel(gcKeyJSON)
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to create Firebase API model")
 	}
-	gcProjectID := os.Getenv("PROJECT_ID")
-	gcBucket := os.Getenv("BUCKET")
+	gcBucket, err := setRequiredEnv("BUCKET")
+	if err != nil {
+		return nil, err
+	}
+	gcProjectID, err := setRequiredEnv("PROJECT_ID")
+	if err != nil {
+		return nil, err
+	}
 	fAPI, err := firebaseutils.New(gcJWTModel, gcProjectID, gcBucket, env.Logger)
 	if err != nil {
 		return nil, errors.WithMessage(err, "Failed to create Firebase API model")
@@ -84,4 +101,12 @@ func New(db *gorm.DB) (*AppEnv, error) {
 	env.BuildService = &services.Build{DB: db}
 	env.TestReportService = &services.TestReport{DB: db}
 	return env, nil
+}
+
+func setRequiredEnv(envKey string) (string, error) {
+	envVar := os.Getenv(envKey)
+	if envVar == "" {
+		return "", fmt.Errorf("Environment Variable missing: %s", envKey)
+	}
+	return envVar, nil
 }
