@@ -278,3 +278,31 @@ func fillTestDetails(details *toolresults.ListStepsResponse, fAPI *firebaseutils
 	err = <-errChannel
 	return testDetails, err
 }
+
+func filterTestsByStatus(tests []*models.Test, status string) []*models.Test {
+	filteredTests := []*models.Test{}
+
+	for _, test := range tests {
+		if statusMatch(test.Outcome, status) || test.Status == "inProgress" { // include currently running tests too
+			filteredTests = append(filteredTests, test)
+		}
+	}
+
+	return filteredTests
+}
+
+func statusMatch(testStatus string, expected string) bool {
+	if testStatus == expected {
+		return true
+	}
+
+	if testStatus == "success" && expected == "passed" {
+		return true
+	}
+
+	if testStatus == "failure" && expected == "failed" {
+		return true
+	}
+
+	return false
+}
