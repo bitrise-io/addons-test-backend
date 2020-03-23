@@ -41,6 +41,7 @@ type AppEnv struct {
 	AppService                      dataservices.App
 	BuildService                    dataservices.Build
 	TestReportService               dataservices.TestReport
+	TestReportAssetService          dataservices.TestReportAsset
 }
 
 // New ...
