@@ -37,8 +37,8 @@ github.com/DataDog/datadog-go v3.5.0+incompatible h1:AShr9cqkF+taHjyQgcBcQUt/ZNK
 github.com/DataDog/datadog-go v3.5.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/aws/aws-sdk-go v1.29.1 h1:U2vZ5WprhGAMjzb4bKVzl2QecUtZFW2BXVqa5bnd+OY=
 github.com/aws/aws-sdk-go v1.29.1/go.mod h1:1KvfttTE3SPKMpo8g2c6jL3ZKfXtFvKscTgahTma5Xg=
-github.com/bitrise-io/api-utils v0.0.0-20200215134217-a8cffc72b7d5 h1:A6hqxt/+8Qi2hHTlO3EMYdrzHs17FvCDmYVnvRkkVDs=
-github.com/bitrise-io/api-utils v0.0.0-20200215134217-a8cffc72b7d5/go.mod h1:ztKZ8ThsKf/QydBCkkN9lSUSiv2JER/bKjFhaQ+aLJA=
+github.com/bitrise-io/api-utils v0.0.0-20200323161256-ee41834663a4 h1:/kEF9/xvS+los2LDDb0wjH+lPKJphVXupPWPiLOyz+Q=
+github.com/bitrise-io/api-utils v0.0.0-20200323161256-ee41834663a4/go.mod h1:ztKZ8ThsKf/QydBCkkN9lSUSiv2JER/bKjFhaQ+aLJA=
 github.com/bitrise-io/go-crypto v0.0.0-20200302082710-e21d65ae221e h1:iKhwoJIUB63P/y49v7Z75OC0hcgFVgAx3v83axRAMzM=
 github.com/bitrise-io/go-crypto v0.0.0-20200302082710-e21d65ae221e/go.mod h1:x4+1n7VrZDk976gL9gG051gUAlXXbwz8qXHWW384mv4=
 github.com/bitrise-io/go-utils v0.0.0-20200224122728-e212188d99b4 h1:35ImX3SrDgRYVDPue7NhybnQ3quuVrTQzjjul+R3aUI=

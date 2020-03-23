@@ -5,7 +5,7 @@ go 1.13
 require (
 	cloud.google.com/go/storage v1.6.0
 	github.com/DataDog/datadog-go v3.5.0+incompatible
-	github.com/bitrise-io/api-utils v0.0.0-20200215134217-a8cffc72b7d5
+	github.com/bitrise-io/api-utils v0.0.0-20200323161256-ee41834663a4
 	github.com/bitrise-io/go-crypto v0.0.0-20200302082710-e21d65ae221e
 	github.com/bitrise-io/go-utils v0.0.0-20200224122728-e212188d99b4
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
