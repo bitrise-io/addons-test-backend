@@ -51,3 +51,17 @@ func (s *App) Update(app *models.App, whitelist []string) ([]error, error) {
 	}
 	return nil, nil
 }
+
+// Delete ...
+func (s *App) Delete(app *models.App) error {
+	result := s.DB.Delete(&app)
+	if result.Error != nil {
+		return result.Error
+	}
+
+	if result.RowsAffected < 1 {
+		return gorm.ErrRecordNotFound
+	}
+
+	return nil
+}

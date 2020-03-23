@@ -7,4 +7,5 @@ type App interface {
 	Create(app *models.App) (*models.App, []error, error)
 	Find(*models.App) (*models.App, error)
 	Update(*models.App, []string) ([]error, error)
+	Delete(*models.App) error
 }
