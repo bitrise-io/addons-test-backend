@@ -39,6 +39,10 @@ func New(appEnv *env.AppEnv) *mux.Router {
 			handler: actions.FirebaseTestlabTestReportGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
 		},
 		{
+			path: "/api/builds/{build_slug}/test_reports/{test_report_id}", middleware: middlewares.AuthenticatedAppMiddleware(appEnv),
+			handler: actions.TestReportGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
+		},
+		{
 			path: "/provision", middleware: middlewares.AuthenticateForProvisioningMiddleware(appEnv),
 			handler: actions.ProvisionPostHandler, allowedMethods: []string{"POST", "OPTIONS"},
 		},
