@@ -8,8 +8,14 @@ import (
 	"github.com/bitrise-io/addons-test-backend/models"
 	"github.com/bitrise-io/api-utils/httpresponse"
 	"github.com/jinzhu/gorm"
+	"github.com/justinas/alice"
 	"github.com/pkg/errors"
 )
+
+// AuthenticateForAppMiddleware ...
+func AuthenticateForAppMiddleware(appEnv *env.AppEnv) alice.Chain {
+	return CommonMiddleware(appEnv).Append(checkAuthenticatedApp(appEnv))
+}
 
 func checkAuthenticatedApp(appEnv *env.AppEnv) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {

@@ -25,23 +25,24 @@ const (
 
 // AppEnv ...
 type AppEnv struct {
-	Port                            string
-	Environment                     string
-	ShouldSkipSessionAuthentication bool
-	Logger                          *zap.Logger
-	HostName                        string
-	AddonAccessToken                string
-	SSOToken                        string
-	RequestParams                   providers.RequestParamsInterface
-	AnalyticsClient                 analytics.Interface
-	SessionCookieStore              *sessions.CookieStore
-	SessionName                     string
-	Session                         session.Interface
-	FirebaseAPI                     *firebaseutils.APIModel
-	AppService                      dataservices.App
-	BuildService                    dataservices.Build
-	TestReportService               dataservices.TestReport
-	TestReportAssetService          dataservices.TestReportAsset
+	Port                                       string
+	Environment                                string
+	ShouldSkipSessionAuthentication            bool
+	ShouldSkipBuildAuthorizationWithBitriseAPI bool
+	Logger                                     *zap.Logger
+	HostName                                   string
+	AddonAccessToken                           string
+	SSOToken                                   string
+	RequestParams                              providers.RequestParamsInterface
+	AnalyticsClient                            analytics.Interface
+	SessionCookieStore                         *sessions.CookieStore
+	SessionName                                string
+	Session                                    session.Interface
+	FirebaseAPI                                *firebaseutils.APIModel
+	AppService                                 dataservices.App
+	BuildService                               dataservices.Build
+	TestReportService                          dataservices.TestReport
+	TestReportAssetService                     dataservices.TestReportAsset
 }
 
 // New ...
@@ -57,6 +58,7 @@ func New(db *gorm.DB) (*AppEnv, error) {
 		env.Environment = ServerEnvDevelopment
 	}
 	env.ShouldSkipSessionAuthentication = os.Getenv("SKIP_SESSION_AUTH") == "yes"
+	env.ShouldSkipBuildAuthorizationWithBitriseAPI = os.Getenv("SKIP_AUTH_WITH_BITRISE_API") == "yes"
 	env.RequestParams = &providers.RequestParams{}
 	analyticsClient, err := analytics.NewClient(env.Logger)
 	if err != nil {

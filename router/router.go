@@ -26,22 +26,7 @@ func New(appEnv *env.AppEnv) *mux.Router {
 			path: "/", middleware: middlewares.CommonMiddleware(appEnv),
 			handler: actions.RootHandler, allowedMethods: []string{"GET", "OPTIONS"},
 		},
-		{
-			path: "/api/app", middleware: middlewares.AuthenticatedAppMiddleware(appEnv),
-			handler: actions.AppGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
-		},
-		{
-			path: "/api/builds/{build_slug}/steps/{step_id}", middleware: middlewares.AuthenticatedAppMiddleware(appEnv),
-			handler: actions.StepGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
-		},
-		{
-			path: "/api/builds/{build_slug}/test_reports/ftl", middleware: middlewares.AuthenticatedAppMiddleware(appEnv),
-			handler: actions.FirebaseTestlabTestReportGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
-		},
-		{
-			path: "/api/builds/{build_slug}/test_reports/{test_report_id}", middleware: middlewares.AuthenticatedAppMiddleware(appEnv),
-			handler: actions.TestReportGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
-		},
+		// PROVISIONING
 		{
 			path: "/provision", middleware: middlewares.AuthenticateForProvisioningMiddleware(appEnv),
 			handler: actions.ProvisionPostHandler, allowedMethods: []string{"POST", "OPTIONS"},
@@ -53,6 +38,28 @@ func New(appEnv *env.AppEnv) *mux.Router {
 		{
 			path: "/provision/{app_slug}", middleware: middlewares.AuthenticateForProvisioningMiddleware(appEnv),
 			handler: actions.ProvisionDeleteHandler, allowedMethods: []string{"DELETE", "OPTIONS"},
+		},
+		// TESTING
+		{
+			path: "/test/apps/{app_slug}/builds/{build_slug}/test_reports/{token}", middleware: middlewares.AuthorizeForTestReportsMiddleware(appEnv),
+			handler: actions.TestReportGetHandler, allowedMethods: []string{"POST", "OPTIONS"},
+		},
+		// API
+		{
+			path: "/api/app", middleware: middlewares.AuthenticateForAppMiddleware(appEnv),
+			handler: actions.AppGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
+		},
+		{
+			path: "/api/builds/{build_slug}/steps/{step_id}", middleware: middlewares.AuthenticateForAppMiddleware(appEnv),
+			handler: actions.StepGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
+		},
+		{
+			path: "/api/builds/{build_slug}/test_reports/ftl", middleware: middlewares.AuthenticateForAppMiddleware(appEnv),
+			handler: actions.FirebaseTestlabTestReportGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
+		},
+		{
+			path: "/api/builds/{build_slug}/test_reports/{test_report_id}", middleware: middlewares.AuthenticateForAppMiddleware(appEnv),
+			handler: actions.TestReportGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
 		},
 	} {
 		r.Handle(route.path, route.middleware.Then(actions.Handler{Env: appEnv, H: route.handler})).

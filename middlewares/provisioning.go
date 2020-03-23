@@ -4,9 +4,15 @@ import (
 	"net/http"
 
 	"github.com/bitrise-io/api-utils/httpresponse"
+	"github.com/justinas/alice"
 
 	"github.com/bitrise-io/addons-test-backend/env"
 )
+
+// AuthenticateForProvisioningMiddleware ...
+func AuthenticateForProvisioningMiddleware(appEnv *env.AppEnv) alice.Chain {
+	return CommonMiddleware(appEnv).Append(authenticateForProvisioning(appEnv))
+}
 
 func authenticateForProvisioning(appEnv *env.AppEnv) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
