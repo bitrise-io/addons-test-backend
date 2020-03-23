@@ -26,3 +26,8 @@ func CommonMiddleware(appEnv *env.AppEnv) alice.Chain {
 func AuthenticatedAppMiddleware(appEnv *env.AppEnv) alice.Chain {
 	return CommonMiddleware(appEnv).Append(checkAuthenticatedApp(appEnv))
 }
+
+// AuthenticateForProvisioningMiddleware ...
+func AuthenticateForProvisioningMiddleware(appEnv *env.AppEnv) alice.Chain {
+	return CommonMiddleware(appEnv).Append(authenticateForProvisioning(appEnv))
+}

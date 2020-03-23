@@ -30,6 +30,7 @@ type AppEnv struct {
 	ShouldSkipSessionAuthentication bool
 	Logger                          *zap.Logger
 	HostName                        string
+	AddonAccessToken                string
 	SSOToken                        string
 	RequestParams                   providers.RequestParamsInterface
 	AnalyticsClient                 analytics.Interface
@@ -74,6 +75,11 @@ func New(db *gorm.DB) (*AppEnv, error) {
 		return nil, err
 	}
 	env.HostName = hostName
+	accessToken, err := setRequiredEnv("ADDON_ACCESS_TOKEN")
+	if err != nil {
+		return nil, err
+	}
+	env.AddonAccessToken = accessToken
 
 	gcKeyJSON, err := setRequiredEnv("SERVICE_ACCOUNT_KEY_JSON")
 	if err != nil {
