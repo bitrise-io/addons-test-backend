@@ -44,6 +44,10 @@ func New(appEnv *env.AppEnv) *mux.Router {
 			path: "/test/apps/{app_slug}/builds/{build_slug}/test_reports/{token}", middleware: middlewares.AuthorizeForTestReportsMiddleware(appEnv),
 			handler: actions.TestReportGetHandler, allowedMethods: []string{"POST", "OPTIONS"},
 		},
+		{
+			path: "/test/apps/{app_slug}/builds/{build_slug}/test_reports/{test_report_id}/{token}", middleware: middlewares.AuthorizeForTestReportManageMiddleware(appEnv),
+			handler: actions.TestReportGetHandler, allowedMethods: []string{"PATCH", "OPTIONS"},
+		},
 		// API
 		{
 			path: "/api/app", middleware: middlewares.AuthenticateForAppMiddleware(appEnv),
@@ -54,8 +58,16 @@ func New(appEnv *env.AppEnv) *mux.Router {
 			handler: actions.StepGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
 		},
 		{
+			path: "/api/builds/{build_slug}/test_summary", middleware: middlewares.AuthenticateForAppMiddleware(appEnv),
+			handler: actions.StepGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
+		},
+		{
+			path: "/api/builds/{build_slug}/test_reports", middleware: middlewares.AuthenticateForAppMiddleware(appEnv),
+			handler: actions.TestReportsGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
+		},
+		{
 			path: "/api/builds/{build_slug}/test_reports/ftl", middleware: middlewares.AuthenticateForAppMiddleware(appEnv),
-			handler: actions.FirebaseTestlabTestReportGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
+			handler: actions.TestSummaryGetHandler, allowedMethods: []string{"GET", "OPTIONS"},
 		},
 		{
 			path: "/api/builds/{build_slug}/test_reports/{test_report_id}", middleware: middlewares.AuthenticateForAppMiddleware(appEnv),

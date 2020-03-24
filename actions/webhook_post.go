@@ -60,7 +60,7 @@ func WebhookHandler(appEnv *env.AppEnv, w http.ResponseWriter, r *http.Request) 
 			}
 		}
 
-		totals, err := GetTotals(appEnv, app.AppSlug, appData.BuildSlug)
+		totals, err := getTotals(appEnv, app.AppSlug, appData.BuildSlug)
 		if err != nil {
 			appEnv.Logger.Warn("Failed to get totals of test", zap.Any("app_data", appData), zap.Error(err))
 			return httpresponse.RespondWithSuccess(w, app)

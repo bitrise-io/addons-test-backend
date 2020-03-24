@@ -26,8 +26,7 @@ type Totals struct {
 	Inconclusive int `json:"inconclusive"`
 }
 
-// GetTotals ...
-func GetTotals(appEnv *env.AppEnv, appSlug, buildSlug string) (Totals, error) {
+func getTotals(appEnv *env.AppEnv, appSlug, buildSlug string) (Totals, error) {
 	testReportRecords, err := appEnv.TestReportService.FindAll(&models.TestReport{AppSlug: appSlug, BuildSlug: buildSlug})
 	if err != nil {
 		return Totals{}, errors.Wrap(err, "Failed to find test reports in DB")

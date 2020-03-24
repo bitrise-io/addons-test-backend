@@ -15,8 +15,8 @@ type TestReportResponseItem struct {
 	Name string `json:"name"`
 }
 
-// TestReportsListHandler ...
-func TestReportsListHandler(appEnv *env.AppEnv, w http.ResponseWriter, r *http.Request) error {
+// TestReportsGetHandler ...
+func TestReportsGetHandler(appEnv *env.AppEnv, w http.ResponseWriter, r *http.Request) error {
 	requestParams := appEnv.RequestParams.Get(r)
 	buildSlug := requestParams["build_slug"]
 	appSlug, ok := appEnv.Session.Get("app_slug").(string)
