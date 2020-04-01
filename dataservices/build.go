@@ -6,4 +6,5 @@ import "github.com/bitrise-io/addons-test-backend/models"
 type Build interface {
 	Create(*models.Build) (*models.Build, []error, error)
 	Find(*models.Build) (*models.Build, error)
+	Update(*models.Build, []string) ([]error, error)
 }
