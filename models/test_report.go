@@ -34,9 +34,7 @@ func (tr *TestReport) BeforeCreate(scope *gorm.Scope) error {
 	if uuid.Equal(tr.ID, uuid.UUID{}) {
 		tr.ID = uuid.NewV4()
 	}
-	t := time.Now()
-	tr.CreatedAt = t
-	tr.UpdatedAt = t
+	tr.CreatedAt = time.Now()
 	return nil
 }
 
@@ -52,6 +50,7 @@ func (tr *TestReport) BeforeSave(scope *gorm.Scope) error {
 	if err != nil {
 		return errors.New("Validation failed")
 	}
+	tr.UpdatedAt = time.Now()
 	return nil
 }
 

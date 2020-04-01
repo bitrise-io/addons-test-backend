@@ -29,9 +29,7 @@ func (a *App) BeforeCreate(scope *gorm.Scope) error {
 	if uuid.Equal(a.ID, uuid.UUID{}) {
 		a.ID = uuid.NewV4()
 	}
-	t := time.Now()
-	a.CreatedAt = t
-	a.UpdatedAt = t
+	a.CreatedAt = time.Now()
 	return nil
 }
 
@@ -47,6 +45,7 @@ func (a *App) BeforeSave(scope *gorm.Scope) error {
 	if err != nil {
 		return errors.New("Validation failed")
 	}
+	a.UpdatedAt = time.Now()
 	return nil
 }
 

@@ -27,9 +27,7 @@ func (tra *TestReportAsset) BeforeCreate(scope *gorm.Scope) error {
 	if uuid.Equal(tra.ID, uuid.UUID{}) {
 		tra.ID = uuid.NewV4()
 	}
-	t := time.Now()
-	tra.CreatedAt = t
-	tra.UpdatedAt = t
+	tra.CreatedAt = time.Now()
 	return nil
 }
 
@@ -45,6 +43,7 @@ func (tra *TestReportAsset) BeforeSave(scope *gorm.Scope) error {
 	if err != nil {
 		return errors.New("Validation failed")
 	}
+	tra.UpdatedAt = time.Now()
 	return nil
 }
 
